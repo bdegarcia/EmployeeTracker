@@ -8,7 +8,7 @@ const connection = mysql.createConnection({
   password: "garcia",
   database: "employee_tracker_db",
 });
-
+// this application was a collaboration between Ben de Garcia and Brianna Bullock
 connection.connect((err) => {
   if (err) throw err;
   console.log(`connected on thread ${connection.threadId}`);
@@ -28,6 +28,11 @@ function mainMenu() {
           "View Employees By Manager",
           "Add Employee",
           "Remove Employee",
+          "View All Departments",
+          "View All Roles",
+          "Add Department",
+          "Add Role",
+          "Update Roll",
           "Exit",
         ],
       },
@@ -37,17 +42,26 @@ function mainMenu() {
         case "View Employees":
           viewEmployees();
           break;
-        case "View Employees By Department":
-          viewByDept();
-          break;
-        case "View Employees By Manager":
-          viewByManager();
-          break;
         case "Add Employee":
           addEmployee();
           break;
+        case "Add Department":
+          addDept();
+          break;
+        case "Add Role":
+          addRole();
+          break;
+        case "Update Roll":
+            updateRoll();
+            break;
         case "Remove Employee":
           removeEmployee();
+          break;
+        case "View All Departments":
+          allDepts();
+          break;
+        case "View All Roles":
+          allRoles();
           break;
         default:
           connection.end();
@@ -55,30 +69,41 @@ function mainMenu() {
       }
     });
 }
+//this was made by Brianna
+function allDepts() {
+  console.log("Displaying all the departments...");
+  connection.query("SELECT id, name Department FROM department", function (
+    err,
+    results
+  ) {
+    if (err) throw err;
+    const table = cTable.getTable(results);
+    console.log(table);
+    mainMenu();
+  });
+}
 
-function viewEmployees() {
+function allRoles() {
+  console.log("Grabbing all the roles...");
   connection.query(
-    `SELECT employee.id, employee.first_name, employee.last_name, title Role, salary, department.name Department, CONCAT_WS(' ', e.first_name,  e.last_name) Manager FROM employee
-    LEFT JOIN role ON employee.role_id = role.id
-    LEFT JOIN department ON role.dept_id = department.id
-    LEFT JOIN employee e ON employee.manager_id = e.id`,
-    (err, data) => {
+    'SELECT id AS "ID", title AS "Title", salary AS "Salary" FROM role',
+    function (err, results) {
       if (err) throw err;
-      console.table(data);
+      const table = cTable.getTable(results);
+      console.log(table);
+      mainMenu();
     }
   );
-  mainMenu();
 }
 
-function viewByDept() {
-  mainMenu();
+function viewEmployees() {
+  getEmployees((data) => {
+    const table = cTable.getTable(data);
+    console.log(table);
+    mainMenu();
+  });
 }
-
-function viewByManager() {
-  mainMenu();
-}
-
-function removeEmployee() {
+function getEmployees(cb) {
   connection.query(
     `SELECT employee.id, employee.first_name, employee.last_name, title Role, salary, department.name Department, CONCAT_WS(' ', e.first_name,  e.last_name) Manager FROM employee
         LEFT JOIN role ON employee.role_id = role.id
@@ -86,35 +111,138 @@ function removeEmployee() {
         LEFT JOIN employee e ON employee.manager_id = e.id`,
     (err, data) => {
       if (err) throw err;
-      let employeeList = [];
-      console.log(data)
-      data.forEach((item) => {
-        employeeList.push(
-          `${item.first_name} ${item.last_name}, Employee# ${item.id}`
-        );
-      });
-      inquirer
-        .prompt([
-          {
-            name: "employee",
-            type: "list",
-            message: "Who is no longer on the crew?",
-            choices: employeeList,
-          },
-        ])
-        .then((answer) => {
-          let firedEmpID = answer.employee.split(" ").pop();
-          connection.query(
-            "DELETE FROM employee WHERE id = ?",
-            firedEmpID,
-            (err, data) => {
-              if (err) throw err;
-              console.log(`He is Done.`);
-            }
-          );
-        });
+      cb(data);
     }
   );
+}
+//This was written by Brianna Bullock
+function addDept() {
+  inquirer
+    .prompt([
+      {
+        name: "dept_name",
+        type: "input",
+        message: "What department would you like to add?",
+      },
+    ])
+    .then((answer) => {
+      connection.query(
+        "INSERT INTO department (name) VALUES (?)", answer.dept_name, (err, results) => {
+          if (err) throw err;
+          console.log(`${answer.dept_name} was added.`);
+        }
+      );
+      mainMenu();
+    });
+}
+//work in progress
+function updateRoll(){
+    getEmployees(function (data) {
+        connection.query('SELECT id FROM role')
+        console.log(data);
+        let employeeList = [];
+        let roleList = [];
+        data.forEach((item) => {
+          employeeList.push(
+            `${item.first_name} ${item.last_name}, role: ${item.Department}`
+          );
+        })
+        data.forEach((item) => {
+            roleList.push(`${item.department}`)
+        });
+    })
+    inquirer.prompt([
+        {
+        name: "employee",
+        message: "Who's role would you like to change?",
+        type: "list",
+        choices: employeeList
+        },
+        {
+            name: "newRole",
+            message: "What is their new role?",
+            type: "list",
+            choices: rollList
+        }
+    ]).then(answers => {
+        connection.query(`INSERT INTO employees  `)
+    })
+}
+
+//this function was made by Ben de Garcia
+function addRole() {
+  connection.query("SELECT * FROM department", function (err, results) {
+    if (err) throw err;
+    let depArr = [];
+    results.forEach((result) => {
+      depArr.push(`${result.name} - ${result.id}`);
+    });
+    // })
+    inquirer
+      .prompt([
+        {
+          name: "title",
+          type: "input",
+          message: "What role would you like to add?",
+        },
+        {
+          name: "salary",
+          type: "input",
+          message: "What is the salary for this role?",
+        },
+        {
+          name: "dept_choice",
+          type: "list",
+          message: "Choose an existing department",
+          choices: depArr,
+        },
+      ])
+      .then((answers) => {
+        let deptID = parseInt(answers.dept_choice.split("-").pop());
+        connection.query(
+          "INSERT INTO role (title, salary, dept_id) VALUES (?, ?, ?)",
+          [answers.title, answers.salary, deptID],
+          function (err, results) {
+            if (err) throw err;
+            const table = cTable.getTable(allRoles(results));
+            console.log(table);
+            console.log(`${answers.title} added to the list of roles.`);
+          }
+        );
+        mainMenu();
+      });
+  });
+}
+
+function removeEmployee() {
+  getEmployees(function (data) {
+    let employeeList = [];
+    data.forEach((item) => {
+      employeeList.push(
+        `${item.first_name} ${item.last_name}, Employee# ${item.id}`
+      );
+    });
+    inquirer
+      .prompt([
+        {
+          name: "employee",
+          type: "list",
+          message: "Who is no longer on the crew?",
+          choices: employeeList,
+        },
+      ])
+      .then((answer) => {
+        let firedEmpID = answer.employee.split(" ").pop();
+        connection.query(
+          "DELETE FROM employee WHERE id = ?",
+          firedEmpID,
+          (err, data) => {
+            if (err) throw err;
+            console.log(`He is Done.`);
+          }
+        );
+      });
+  });
   mainMenu();
 }
 
@@ -138,7 +266,6 @@ function addEmployee() {
                LEFT JOIN employee m ON (e.manager_id = m.id)
                ORDER BY e.first_name, e.last_name, d.name, r.title`,
         (err, data) => {
-          console.log(data);
           let managers = [];
           if (err) throw err;
           data.forEach((item) => {
