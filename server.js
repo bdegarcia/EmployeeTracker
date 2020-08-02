@@ -24,8 +24,6 @@ function mainMenu() {
         type: "list",
         choices: [
           "View Employees",
-          "View Employees By Department",
-          "View Employees By Manager",
           "Add Employee",
           "Remove Employee",
           "View All Departments",
@@ -173,7 +171,6 @@ function updateRoll() {
     });
 }
 
-//this function was made by Ben de Garcia
 function addRole() {
   connection.query("SELECT * FROM department", function (err, results) {
     if (err) throw err;
@@ -242,11 +239,12 @@ function removeEmployee() {
           (err, data) => {
             if (err) throw err;
             console.log(`He is Done.`);
+            mainMenu();
           }
         );
       });
   });
-  mainMenu();
+
 }
 function addEmployee() {
   connection.query(
