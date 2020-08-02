@@ -52,8 +52,8 @@ function mainMenu() {
           addRole();
           break;
         case "Update Roll":
-            updateRoll();
-            break;
+          updateRoll();
+          break;
         case "Remove Employee":
           removeEmployee();
           break;
@@ -127,7 +127,9 @@ function addDept() {
     ])
     .then((answer) => {
       connection.query(
-        "INSERT INTO department (name) VALUES (?)", answer.dept_name, (err, results) => {
+        "INSERT INTO department (name) VALUES (?)",
+        answer.dept_name,
+        (err, results) => {
           if (err) throw err;
           console.log(`${answer.dept_name} was added.`);
         }
@@ -136,37 +138,39 @@ function addDept() {
     });
 }
 //work in progress
-function updateRoll(){
-    getEmployees(function (data) {
-        connection.query('SELECT id FROM role')
-        console.log(data);
-        let employeeList = [];
-        let roleList = [];
-        data.forEach((item) => {
-          employeeList.push(
-            `${item.first_name} ${item.last_name}, role: ${item.Department}`
-          );
-        })
-        data.forEach((item) => {
-            roleList.push(`${item.department}`)
-        });
-    })
-    inquirer.prompt([
-        {
+function updateRoll() {
+  getEmployees(function (data) {
+    connection.query("SELECT id FROM role");
+    console.log(data);
+    let employeeList = [];
+    let roleList = [];
+    data.forEach((item) => {
+      employeeList.push(
+        `${item.first_name} ${item.last_name}, role: ${item.Department}`
+      );
+    });
+    data.forEach((item) => {
+      roleList.push(`${item.department}`);
+    });
+  });
+  inquirer
+    .prompt([
+      {
         name: "employee",
         message: "Who's role would you like to change?",
         type: "list",
-        choices: employeeList
-        },
-        {
-            name: "newRole",
-            message: "What is their new role?",
-            type: "list",
-            choices: rollList
-        }
-    ]).then(answers => {
-        connection.query(`INSERT INTO employees  `)
-    })
+        choices: employeeList,
+      },
+      {
+        name: "newRole",
+        message: "What is their new role?",
+        type: "list",
+        choices: rollList,
+      },
+    ])
+    .then((answers) => {
+      connection.query(`INSERT INTO employees  `);
+    });
 }
 
 //this function was made by Ben de Garcia
@@ -213,7 +217,6 @@ function addRole() {
       });
   });
 }
-
 function removeEmployee() {
   getEmployees(function (data) {
     let employeeList = [];
@@ -245,7 +248,6 @@ function removeEmployee() {
   });
   mainMenu();
 }
-
 function addEmployee() {
   connection.query(
     `SELECT r.title Title, d.name Department,r.id RoleID
